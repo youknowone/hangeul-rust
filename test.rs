@@ -14,8 +14,8 @@ fn test_jamo() {
     let input_str = "아희방맣희";
     for c in input_str.chars() {
         let hangeul: hangeul::hangeul::HangeulSyllable = hangeul::hangeul::Hangeul::from_char(c);
-        println(format!("{:?}", hangeul));
-        println(format!("{}{}{}", hangeul.initial_jamo().unwrap(), hangeul.vowel_jamo().unwrap(), hangeul.final_jamo().unwrap_or(' ')));
+        println!("{:?}", hangeul);
+        println!("{}{}{}", hangeul.initial_jamo().unwrap(), hangeul.vowel_jamo().unwrap(), hangeul.final_jamo().unwrap_or(' '));
     }
 }
 
