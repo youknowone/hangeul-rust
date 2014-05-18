@@ -1,5 +1,6 @@
 #![crate_id="hangeul"]
 #![crate_type="lib"]
+#![license="BSD simplified"]
 
 pub static initial_count: uint = 19;
 pub static vowel_count: uint = 21;
@@ -215,6 +216,7 @@ impl Conversion for Final {
     }
 }
 
+#[experimental]
 pub enum Alphabet {
     Initial(Initial),
     Vowel(Vowel),
@@ -223,9 +225,9 @@ pub enum Alphabet {
 
 
 pub trait SyllableTrait: Conversion {
-    fn initial(&self) -> Initial;
-    fn peak(&self) -> Vowel;
-    fn final(&self) -> Final;
+    fn initial(&self) -> Option<Initial>;
+    fn peak(&self) -> Option<Vowel>;
+    fn final(&self) -> Option<Final>;
 }
 
 pub struct Syllable {
@@ -242,6 +244,18 @@ impl Syllable {
     pub fn char(&self) -> char {
         let t: &SyllableTrait = self;
         t.char()
+    }
+
+    pub fn initial(&self) -> Initial {
+        self.initial
+    }
+
+    pub fn peak(&self) -> Vowel {
+        self.peak
+    }
+
+    pub fn final(&self) -> Final {
+        self.final
     }
 }
 
@@ -270,16 +284,16 @@ impl Conversion for Syllable {
 }
 
 impl SyllableTrait for Syllable {
-    fn initial(&self) -> Initial {
-        self.initial
+    fn initial(&self) -> Option<Initial> {
+        Some(self.initial())
     }
 
-    fn peak(&self) -> Vowel {
-        self.peak
+    fn peak(&self) -> Option<Vowel> {
+        Some(self.peak())
     }
 
-    fn final(&self) -> Final {
-        self.final
+    fn final(&self) -> Option<Final> {
+        Some(self.final())
     }
 }
 
@@ -305,21 +319,21 @@ impl Conversion for LazySyllable {
 }
 
 impl SyllableTrait for LazySyllable {
-    fn initial(&self) -> Initial {
+    fn initial(&self) -> Option<Initial> {
         let code = (self.data - syllable_start as u32) / (vowel_count * final0_count) as u32;
-        let char: Initial = FromPrimitive::from_u32(code).unwrap();
+        let char: Option<Initial> = FromPrimitive::from_u32(code);
         char
     }
 
-    fn peak(&self) -> Vowel {
+    fn peak(&self) -> Option<Vowel> {
         let code = (self.data - syllable_start as u32) / final0_count as u32 % vowel_count as u32;
-        let char: Vowel = FromPrimitive::from_u32(code).unwrap();
+        let char: Option<Vowel> = FromPrimitive::from_u32(code);
         char
     }
 
-    fn final(&self) -> Final {
+    fn final(&self) -> Option<Final> {
         let code = (self.data - syllable_start as u32) % (initial_count * vowel_count) as u32;
-        let char: Final = FromPrimitive::from_u32(code).unwrap();
+        let char: Option<Final> = FromPrimitive::from_u32(code);
         char
     }
 }
