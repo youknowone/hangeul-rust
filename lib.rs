@@ -2,33 +2,69 @@
 #![crate_type="lib"]
 #![license="BSD simplified"]
 
-pub static initial_count: uint = 19;
-pub static vowel_count: uint = 21;
-pub static final_count: uint = 27;
-pub static final0_count: uint = final_count + 1;
+/*! Tools to manipulate hangeul data in unicode.
+ */
 
+/// Unicode start point of syllable range
 pub static syllable_start: char = '가'; // U+AC00
+/// Unicode end point of syllable range
 pub static syllable_end: char = '힣'; // U+D7A3
-pub static syllable_count: uint = syllable_end as uint - syllable_start as uint;
+/// Size of syllable range in Unicode
+pub static syllable_count: uint = syllable_end as uint - syllable_start as uint + 1;
 
+/// Unicode start point of jamo initial range
 pub static jamo_initial_start: char = 'ᄀ'; // U+1100
-pub static jamo_initial_modern_end: char = 'ᄒ'; // U+1112
-pub static jamo_initial_end: char = 'ᅞ'; // U+115E
-//static jamo_initial_filler: char = from_u32(0x115f).unwrap();
-//static jamo_vowel_filler: char = from_u32(0x1160).unwrap();
+/// Unicode end point of jamo initial range
+pub static jamo_initial_end: char = 'ᄒ'; // U+1112
+/// Unicode start point of ancient jamo initial range
+pub static jamo_initial_ancient_start: char = '\u1113';
+/// Unicode end point of ancient jamo initial range
+pub static jamo_initial_ancient_end: char = '\u115e';
+
+/// Unicode filler character for jamo initial
+pub static jamo_initial_filler: char = '\u115f';
+/// Unicode filler character for jamo peak
+pub static jamo_peak_filler: char = '\u1160';
+
+/// Unicode start point of jamo peak range
 pub static jamo_peak_start: char = 'ᅡ';
-pub static jamo_peak_modern_end: char = 'ᅵ'; // U+1175
-pub static jamo_peak_end: char = 'ᆧ';
-pub static jamo_final0_start: char = 'ᆧ'; // U+11A7
+/// Unicode end point of jamo peak range
+pub static jamo_peak_end: char = 'ᅵ'; // U+1175
+/// Unicode start point of ancient jamo peak range
+pub static jamo_peak_ancient_start: char = '\u1176';
+/// Unicode start point of ancient jamo peak range
+pub static jamo_peak_ancient_end: char = 'ᆧ';
+
+/// Virtual Unicode start point of jamo final range supposing there is 'no final' character
+pub static jamo_final0_start: char = '\u11a7';
+/// Unicode start point of jamo final range
 pub static jamo_final_start: char = 'ᆨ'; // U+11A8
-pub static jamo_final_modern_end: char = 'ᇂ'; // U+11C2
-pub static jamo_final_end: char = 'ᇿ'; // U+11FF
+/// Unicode end point of jamo final range
+pub static jamo_final_end: char = 'ᇂ'; // U+11C
+/// Unicode start point of ancient jamo final range
+pub static jamo_final_ancient_start: char = '\u11c3';
+/// Unicode end point of ancient jamo final range
+pub static jamo_final_ancient_end: char = '\u11ff';
+
+/// Unicode start point of jamo range
 pub static jamo_start: char = jamo_initial_start;
-pub static jamo_end: char = jamo_final_end;
+/// Unicode end point of jamo range
+pub static jamo_end: char = jamo_final_ancient_end;
+
+/// Size of jamo initial range in Unicode
+pub static initial_count: uint = jamo_initial_end as uint - jamo_initial_start as uint + 1; // 19
+/// Size of jamo peak range in Unicode
+pub static peak_count: uint = jamo_peak_end as uint - jamo_peak_start as uint + 1; // 21
+/// Size of jamo final range in Unicode
+pub static final_count: uint = jamo_final_end as uint - jamo_final_start as uint + 1; //27
+/// Virtual size of jamo final range in Unicode supposing there is 'no final' character
+pub static final0_count: uint = final_count + 1;
+/// Number of vowels
+pub static vowel_count: uint = peak_count;
 
 pub static compat_modern_jamo_start: char = 'ㄱ'; // U+3131
 pub static compat_modern_jamo_end: char = 'ㅣ'; // U+3163
-pub static compat_ancient_jamo_start: char = 'ㅥ'; // U+3163
+pub static compat_ancient_jamo_start: char = 'ㅥ'; // U+3164
 pub static compat_ancient_jamo_end: char = 'ㆎ'; // U+318E
 pub static compat_jamo_start: char = compat_modern_jamo_start;
 pub static compat_jamo_end: char = compat_ancient_jamo_end;
@@ -42,54 +78,63 @@ pub enum Modernity {
 
 #[experimental]
 pub enum DataClass {
-    NonHangeul,
     Syllable,
     SyllableNFD,
     Jamo(Modernity),
     CompatibillityJamo(Modernity),
 }
 
+#[experimental]
 impl DataClass {
-    pub fn of_char(data: char) -> DataClass {
+    pub fn of_char(data: char) -> Option<DataClass> {
         match data {
-            syllable_start..syllable_end => {
-                return Syllable
-            }
+            syllable_start..syllable_end => Some(Syllable),
             jamo_start..jamo_end => {
-                match data {
-                    'ᄀ'..'ᄒ' | 'ᅡ'..'ᅵ' | 'ᆨ'..'ᇂ' => {
-                        return Jamo(Modern)
+                Some(match data {
+                    jamo_initial_start .. jamo_initial_end |
+                    jamo_peak_start .. jamo_peak_end |
+                    jamo_final_start .. jamo_final_end => {
+                        Jamo(Modern)
                     }
                     _ => {
-                        return Jamo(Ancient)
+                        Jamo(Ancient)
                     }
-                }
-            }
-            compat_modern_jamo_start..compat_modern_jamo_end => {
-                return CompatibillityJamo(Modern)
-            }
-            compat_ancient_jamo_start..compat_ancient_jamo_end => {
-                return CompatibillityJamo(Ancient)
-            }
-            _ => {
-                return NonHangeul
-            }
+                })
+            },
+            compat_modern_jamo_start..compat_modern_jamo_end => Some(CompatibillityJamo(Modern)),
+            compat_ancient_jamo_start..compat_ancient_jamo_end => Some(CompatibillityJamo(Ancient)),
+            _ => None,
         }
     }
 }
 
+/** Supports conversions between unicode <-> manipulable representation.
+
+    There are supposed unicode code point for character type.
+
+    - Syllable types are mapped to syllable ranges.
+    - Jamo types are mapped to jamo ranges.
+    - Compatitble jamo and ancient characters are out of this trait.
+ */
 pub trait Conversion {
-    fn from_char(c: char) -> Option<Self>;
-    fn char(&self) -> char;
+    fn from_char(c: char) -> Option<Self> {
+        Conversion::from_u32(c as u32)
+    }
+    fn from_u32(v: u32) -> Option<Self>;
+    fn char(&self) -> Option<char>;
 }
 
+/** Supports unicode jamo ranges.
+ */
 pub trait Jamo: FromPrimitive {
-    fn from_char(c: char, base: char) -> Option<Self> {
-        let opt: Option<Self> = FromPrimitive::from_u32(c as u32 - base as u32);
+    fn _from_u32(v: u32, base: char) -> Option<Self> {
+        let opt: Option<Self> = FromPrimitive::from_u32(v - base as u32);
         opt
     }
 }
 
+/** Order of modern hangeul initials.
+ */
 #[deriving(Eq)]
 #[deriving(FromPrimitive)]
 #[deriving(Show)]
@@ -118,15 +163,17 @@ pub enum Initial {
 impl Jamo for Initial { }
 
 impl Conversion for Initial {
-    fn from_char(c: char) -> Option<Initial> {
-        Jamo::from_char(c, jamo_initial_start)
+    fn from_u32(v: u32) -> Option<Initial> {
+        Jamo::_from_u32(v, jamo_initial_start)
     }
 
-    fn char(&self) -> char {
-        std::char::from_u32(jamo_initial_start as u32 + *self as u32).unwrap()
+    fn char(&self) -> Option<char> {
+        std::char::from_u32(jamo_initial_start as u32 + *self as u32)
     }
 }
 
+/** Order of modern hangeul vowels.
+ */
 #[deriving(Eq)]
 #[deriving(FromPrimitive)]
 #[deriving(Show)]
@@ -157,15 +204,17 @@ pub enum Vowel {
 impl Jamo for Vowel { }
 
 impl Conversion for Vowel {
-    fn from_char(c: char) -> Option<Vowel> {
-        Jamo::from_char(c, jamo_peak_start)
+    fn from_u32(v: u32) -> Option<Vowel> {
+        Jamo::_from_u32(v, jamo_peak_start)
     }
 
-    fn char(&self) -> char {
-        std::char::from_u32(jamo_peak_start as u32 + *self as u32).unwrap()
+    fn char(&self) -> Option<char> {
+        std::char::from_u32(jamo_peak_start as u32 + *self as u32)
     }
 }
 
+/** Order of modern hangeul finals.
+ */
 #[deriving(Eq)]
 #[deriving(FromPrimitive)]
 #[deriving(Show)]
@@ -203,15 +252,19 @@ pub enum Final {
 impl Jamo for Final { }
 
 impl Conversion for Final {
-    fn from_char(c: char) -> Option<Final> {
-        Jamo::from_char(c, jamo_final0_start)
+    fn from_u32(v: u32) -> Option<Final> {
+        if v == jamo_final0_start as u32 {
+            None
+        } else {
+            Jamo::_from_u32(v, jamo_final0_start)
+        }
     }
 
-    fn char(&self) -> char {
+    fn char(&self) -> Option<char> {
         if *self != FinalBlank {
-            std::char::from_u32(jamo_final0_start as u32 + *self as u32).unwrap()
+            std::char::from_u32(jamo_final0_start as u32 + *self as u32)
         } else {
-            '\0'
+            None
         }
     }
 }
@@ -223,26 +276,40 @@ pub enum Alphabet {
     Final(Final),
 }
 
-
-pub trait SyllableTrait: Conversion {
+/** Supports syllable handling in alphabet level.
+ */
+pub trait Syllable: Conversion {
+    /// initial
     fn initial(&self) -> Option<Initial>;
+    /// peak
     fn peak(&self) -> Option<Vowel>;
+    /// final
     fn final(&self) -> Option<Final>;
+    /// final but return FinalBlank if final does not exist, never None
+    fn final0(&self) -> Final;
+
+    fn NFD(&self) -> Option<~str>;
 }
 
-pub struct Syllable {
+/** Unicode syllable range equivalent representation.
+ */
+pub struct ConcreteSyllable {
     initial: Initial,
     peak: Vowel,
     final: Final,
 }
 
-impl Syllable {
-    pub fn from_char(c: char) -> Option<Syllable> {
+impl ConcreteSyllable {
+    pub fn from_char(c: char) -> Option<ConcreteSyllable> {
         Conversion::from_char(c)
     }
 
-    pub fn char(&self) -> char {
-        let t: &SyllableTrait = self;
+    pub fn from_u32(code: u32) -> Option<ConcreteSyllable> {
+        Conversion::from_u32(code)
+    }
+
+    pub fn char(&self) -> Option<char> {
+        let t: &Syllable = self;
         t.char()
     }
 
@@ -254,36 +321,34 @@ impl Syllable {
         self.peak
     }
 
-    pub fn final(&self) -> Final {
+    pub fn final0(&self) -> Final {
         self.final
     }
 }
 
-impl Conversion for Syllable {
-    fn from_char(c: char) -> Option<Syllable> {
-        let code = c as uint;
-        let mut base = code - (syllable_start as uint);
-        if base < syllable_count {
-            let final: Final = FromPrimitive::from_uint(base % final0_count).unwrap();
-            base /= final0_count;
-            let peak: Vowel = FromPrimitive::from_uint(base % vowel_count).unwrap();
-            base /= vowel_count;
-            let initial: Initial = FromPrimitive::from_uint(base % initial_count).unwrap();
+impl Conversion for ConcreteSyllable {
+    fn from_u32(code: u32) -> Option<ConcreteSyllable> {
+        let mut base = code - (syllable_start as u32);
+        if base < syllable_count as u32 {
+            let final: Final = FromPrimitive::from_u32(base % final0_count as u32).unwrap();
+            base /= final0_count as u32;
+            let peak: Vowel = FromPrimitive::from_u32(base % vowel_count as u32).unwrap();
+            base /= vowel_count as u32;
+            let initial: Initial = FromPrimitive::from_u32(base % initial_count as u32).unwrap();
 
-            Some(Syllable { initial: initial, peak: peak, final: final })
+            Some(ConcreteSyllable { initial: initial, peak: peak, final: final })
         } else {
             None
         }
     }
 
-    fn char(&self) -> char {
+    fn char(&self) -> Option<char> {
         std::char::from_u32(syllable_start as u32 + self.final as u32 +
             final0_count as u32 * (self.peak as u32 + (vowel_count as u32 * self.initial as u32)))
-        .unwrap()
     }
 }
 
-impl SyllableTrait for Syllable {
+impl Syllable for ConcreteSyllable {
     fn initial(&self) -> Option<Initial> {
         Some(self.initial())
     }
@@ -293,32 +358,56 @@ impl SyllableTrait for Syllable {
     }
 
     fn final(&self) -> Option<Final> {
-        Some(self.final())
+        if self.final0() == FinalBlank {
+            None
+        } else {
+            Some(self.final0())
+        }
+    }
+
+    fn final0(&self) -> Final {
+        self.final0()
+    }
+
+    fn NFD(&self) -> Option<~str> {
+        let initial = self.initial();
+        let peak = self.peak();
+        let final = self.final0();
+
+        let mut buf = StrBuf::new();
+        buf.push_char(initial.char().unwrap());
+        buf.push_char(peak.char().unwrap());
+        if final != FinalBlank {
+            buf.push_char(final.char().unwrap());
+        }
+        Some(buf.into_owned())
     }
 }
 
 
+/** Unicode syllable range equivalent representation, but calculates values dynamically.
+ */
 pub struct LazySyllable {
     data: u32,
 }
 
 impl LazySyllable {
-    pub fn from_char(c: char) -> Option<Syllable> {
+    pub fn from_char(c: char) -> Option<LazySyllable> {
         Conversion::from_char(c)
     }
 }
 
 impl Conversion for LazySyllable {
-    fn from_char(c: char) -> Option<LazySyllable> {
-        Some(LazySyllable { data: c as u32 })
+    fn from_u32(code: u32) -> Option<LazySyllable> {
+        Some(LazySyllable { data: code })
     }
 
-    fn char(&self) -> char {
-        std::char::from_u32(self.data).unwrap()
+    fn char(&self) -> Option<char> {
+        std::char::from_u32(self.data)
     }
 }
 
-impl SyllableTrait for LazySyllable {
+impl Syllable for LazySyllable {
     fn initial(&self) -> Option<Initial> {
         let code = (self.data - syllable_start as u32) / (vowel_count * final0_count) as u32;
         let char: Option<Initial> = FromPrimitive::from_u32(code);
@@ -332,9 +421,127 @@ impl SyllableTrait for LazySyllable {
     }
 
     fn final(&self) -> Option<Final> {
-        let code = (self.data - syllable_start as u32) % (initial_count * vowel_count) as u32;
+        match self.final0() {
+            FinalBlank => None,
+            any => Some(any),
+        }
+    }
+
+    fn final0(&self) -> Final {
+        let code = (self.data - syllable_start as u32) % final0_count as u32;
         let char: Option<Final> = FromPrimitive::from_u32(code);
-        char
+        char.unwrap()
+    }
+
+    fn NFD(&self) -> Option<~str> {
+        match ConcreteSyllable::from_u32(self.data) {
+            Some(syl) => {
+                let syllable: &Syllable = &syl;
+                syllable.NFD()
+            }
+            None => None,
+        }
     }
 }
 
+/** Syllable builder with Syllable trait.
+ */
+pub struct SyllableBuilder {
+    pub initial: Option<Initial>,
+    pub peak: Option<Vowel>,
+    pub final: Option<Final>,
+}
+
+impl SyllableBuilder {
+    pub fn new() -> SyllableBuilder {
+        SyllableBuilder { initial: None, peak: None, final: None, }
+    }
+
+    pub fn from_alphabet(
+            initial: Option<Initial>, peak: Option<Vowel>, final: Option<Final>)
+            -> SyllableBuilder {
+        SyllableBuilder { initial: initial, peak: peak, final: final, }
+    }
+}
+
+impl Conversion for SyllableBuilder {
+    fn from_u32(code: u32) -> Option<SyllableBuilder> {
+        let opt = ConcreteSyllable::from_u32(code);
+        match opt {
+            Some(syl) => {
+                let syltr: &Syllable = &syl;
+                Some(SyllableBuilder {
+                    initial: syltr.initial(),
+                    peak: syltr.peak(),
+                    final: syltr.final(),
+                })
+            }
+            None => None
+        }
+    }
+
+    fn char(&self) -> Option<char> {
+        match self.initial {
+            Some(initial) => match self.peak {
+                Some(peak) => match self.final {
+                    Some(final) => {
+                        ConcreteSyllable { initial: initial, peak: peak, final: final }.char()
+                    }
+                    None => {
+                        ConcreteSyllable { initial: initial, peak: peak, final: FinalBlank }.char()
+                    }
+                },
+                None => None,
+            },
+            None => None,
+        }
+    }
+}
+
+impl Syllable for SyllableBuilder {
+    fn initial(&self) -> Option<Initial> {
+        self.initial
+    }
+
+    fn peak(&self) -> Option<Vowel> {
+        self.peak
+    }
+
+    fn final(&self) -> Option<Final> {
+        match self.final {
+            Some(FinalBlank) => None,
+            _ => self.final,
+        }
+    }
+
+    fn final0(&self) -> Final {
+        match self.final {
+            Some(c) => c,
+            None => FinalBlank,
+        }
+    }
+
+    fn NFD(&self) -> Option<~str> {
+        let initial = self.initial();
+        let peak = self.peak();
+        let final = self.final();
+
+        if initial == None && peak == None && final == None {
+            None
+        } else {
+            let mut buf = StrBuf::new();
+            buf.push_char(match initial {
+                Some(c) => c.char().unwrap(),
+                None => jamo_initial_filler,
+            });
+            buf.push_char(match peak {
+                Some(c) => c.char().unwrap(),
+                None => jamo_peak_filler,
+            });
+            if final != None {
+                buf.push_char(final.unwrap().char().unwrap());
+            }
+            Some(buf.into_owned())
+        }
+    }
+}

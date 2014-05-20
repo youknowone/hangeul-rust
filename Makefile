@@ -1,16 +1,25 @@
 
-RUSTC=rustc
-RFLAGS='-L.'
+RC=rustc
+RDOC=rustdoc
+RLIBFLAGS=-O -L.
+RFLAGS=-O -L.
 
 all: compile
 	
 
 compile:
-	$(RUSTC) $(RFLAGS) lib.rs
+	$(RC) $(RLIBFLAGS) lib.rs
 
 test: compile
-	$(RUSTC) $(RFLAGS) --test test.rs
+	$(RC) $(RFLAGS) --test test.rs
 	./test
 
 clean:
 	rm *.rlib
+
+doc:
+	$(RDOC) lib.rs
+
+doc-clean:
+	rm -rf doc
+

@@ -1,2 +1,6 @@
+.*.swp
 *.rlib
 *.dylib
+/doc
+/hangeul
+/test
