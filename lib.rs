@@ -288,7 +288,7 @@ pub trait Syllable: Conversion {
     /// final but return FinalBlank if final does not exist, never None
     fn final0(&self) -> Final;
 
-    fn NFD(&self) -> Option<~str>;
+    fn NFD(&self) -> Option<String>;
 }
 
 /** Unicode syllable range equivalent representation.
@@ -369,18 +369,18 @@ impl Syllable for ConcreteSyllable {
         self.final0()
     }
 
-    fn NFD(&self) -> Option<~str> {
+    fn NFD(&self) -> Option<String> {
         let initial = self.initial();
         let peak = self.peak();
         let final = self.final0();
 
-        let mut buf = StrBuf::new();
+        let mut buf = String::new();
         buf.push_char(initial.char().unwrap());
         buf.push_char(peak.char().unwrap());
         if final != FinalBlank {
             buf.push_char(final.char().unwrap());
         }
-        Some(buf.into_owned())
+        Some(buf)
     }
 }
 
@@ -433,7 +433,7 @@ impl Syllable for LazySyllable {
         char.unwrap()
     }
 
-    fn NFD(&self) -> Option<~str> {
+    fn NFD(&self) -> Option<String> {
         match ConcreteSyllable::from_u32(self.data) {
             Some(syl) => {
                 let syllable: &Syllable = &syl;
@@ -521,7 +521,7 @@ impl Syllable for SyllableBuilder {
         }
     }
 
-    fn NFD(&self) -> Option<~str> {
+    fn NFD(&self) -> Option<String> {
         let initial = self.initial();
         let peak = self.peak();
         let final = self.final();
@@ -529,7 +529,7 @@ impl Syllable for SyllableBuilder {
         if initial == None && peak == None && final == None {
             None
         } else {
-            let mut buf = StrBuf::new();
+            let mut buf = String::new();
             buf.push_char(match initial {
                 Some(c) => c.char().unwrap(),
                 None => jamo_initial_filler,
