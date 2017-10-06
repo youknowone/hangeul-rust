@@ -3,4 +3,6 @@
 *.dylib
 /doc
 /hangeul
-/test
+/test/target/
+**/*.rs.bk
+Cargo.lock

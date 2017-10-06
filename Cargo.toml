@@ -1,0 +1,12 @@
+[package]
+name = "hangeul"
+version = "0.2.0"
+authors = ["Jeong YunWon <jeong+hangeul@youknowone.org>"]
+
+[dependencies]
+num = "0.1.40"
+enum_primitive = "0.1.1"
+
+[lib]
+name = "hangeul"
+path = "src/hangeul.rs"
